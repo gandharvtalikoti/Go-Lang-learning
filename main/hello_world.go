@@ -3,10 +3,13 @@ package main
 import (
 	"fmt"
 	"math"
+	"math/cmplx"
 	"math/rand"
+	
+	// host/userororganizationname/project/(dir)/package
 )
 
-// package level var statement 
+// package level var statement
 var c, python, java bool
 
 
@@ -28,6 +31,13 @@ func split(sum int) (x, y int) {
 	// They can harm readability in longer functions.
 
 }
+
+var (
+	ToBe   bool       = false
+	MaxInt uint64     = 1<<64 - 1
+	z      complex128 = cmplx.Sqrt(-5 + 12i)
+)
+
 func main() {
 	// function level var statement
 	var i,j = 1,2
@@ -45,4 +55,17 @@ func main() {
 	a, b := swap("hello", "world")
 	fmt.Println(a, b)
 	fmt.Println(split(17))
+
+
+	fmt.Printf("Type: %T Value: %v\n", ToBe, ToBe)
+	fmt.Printf("Type: %T Value: %v\n", MaxInt, MaxInt)
+	fmt.Printf("Type: %T Value: %v\n", z, z)
+
+
+	for i:=0; i<3; i++{
+		fmt.Print(i," ")
+	}
+
+	fmt.Println(v) // i can access this variable as its within the package "main"
+
 }
