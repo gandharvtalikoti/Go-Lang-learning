@@ -24,11 +24,17 @@ type book struct {
 	Quantity int    `json:"quantity"`
 }
 
+// dummy data
+var books = []book{
+	{ID: "1", Title: "In Search of Lost Time", Author: "Marcel Proust", Quantity: 2},
+	{ID: "2", Title: "The Great Gatsby", Author: "F. Scott Fitzgerald", Quantity: 5},
+	{ID: "3", Title: "War and Peace", Author: "Leo Tolstoy", Quantity: 6},
+}
 
 func getBooks(c *gin.Context) {
 	db, err := connectDB()
-	if err != nil{
-		c.IndentedJSON(http.StatusInternalServerError, gin.H{"error":"failed to connect to db"})
+	if err != nil {
+		c.IndentedJSON(http.StatusInternalServerError, gin.H{"error": "failed to connect to db"})
 		return
 	}
 	defer db.Close()
@@ -67,12 +73,21 @@ func createBook(c *gin.Context) {
 
 // getting a book by id
 func getBookById(id string) (*book, error) {
-	for i, b := range books {
-		if b.ID == id {
-			return &books[i], nil
-		}
+	db, err := connectDB()
+	if err != nil {
+		//c.IndentedJSON(http.StatusInternalServerError, gin.H{"error":"failed to connect to db"})
+		return nil, errors.New("failed to connect to database")
 	}
-	return nil, errors.New("book not found")
+	defer db.Close()
+
+	var b book // to store the book with id
+	err = db.QueryRow("SELECT id, title, author, quantity FROM books_details WHERE id = ?", id).Scan(&b.ID, &b.Title, &b.Author, &b.Quantity)
+	if err == sql.ErrNoRows {
+		return nil, errors.New("book not found")
+	} else if err != nil {
+		return nil, errors.New("failed to fetch book")
+	}
+	return &b, nil
 }
 
 func bookById(c *gin.Context) {
@@ -82,7 +97,6 @@ func bookById(c *gin.Context) {
 		c.IndentedJSON(http.StatusNotFound, gin.H{"error": "book not found"})
 		return
 	}
-
 	c.IndentedJSON(http.StatusOK, book)
 }
 
@@ -138,7 +152,7 @@ func connectDB() (*sql.DB, error) {
 
 }
 func main() {
-	
+
 	router := gin.Default()
 	router.GET("/books", getBooks)
 	router.POST("/books", createBook)
@@ -146,7 +160,6 @@ func main() {
 	router.PATCH("/return", returnBook)
 	router.GET("/books/:id", bookById)
 	// router.Run("localhost:8080")
-
 
 	log.Println("Starting server on http://localhost:8080")
 	if err := router.Run("localhost:8080"); err != nil {
