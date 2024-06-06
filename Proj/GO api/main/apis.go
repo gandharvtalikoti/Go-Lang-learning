@@ -38,7 +38,7 @@ func createBook(c *gin.Context) {
 		c.IndentedJSON(http.StatusInternalServerError, gin.H{"error": "failed to create book"})
 		return
 	}
-	res.LastInsertId()
+	_, err = res.LastInsertId()
 	if err != nil {
 		c.IndentedJSON(http.StatusInternalServerError, gin.H{"error": "failed to get book ID"})
 		return
