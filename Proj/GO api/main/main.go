@@ -32,10 +32,21 @@ var books = []book{
 }
 
 func getBooks(c *gin.Context) {
-	
+	db, err := connectDB()
+	if err != nil{
+		c.IndentedJSON(http.StatusInternalServerError, gin.H{"error":"failed to connect to db"})
+		return
+	}
+	defer db.Close()
+
+	rows, err := db.Query("SELECT * FROM books")
+	if err != nil {
+		c.IndentedJSON(http.StatusInternalServerError, gin.H{"error": "failed to fetch books"})
+		return
+	}
+	defer rows.Close()
 
 	var books []book
-
 	for rows.Next() {
 		var b book
 		err := rows.Scan(&b.ID, &b.Title, &b.Author, &b.Quantity)
