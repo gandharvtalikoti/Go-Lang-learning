@@ -24,12 +24,6 @@ type book struct {
 	Quantity int    `json:"quantity"`
 }
 
-// dummy data
-var books = []book{
-	{ID: "1", Title: "In Search of Lost Time", Author: "Marcel Proust", Quantity: 2},
-	{ID: "2", Title: "The Great Gatsby", Author: "F. Scott Fitzgerald", Quantity: 5},
-	{ID: "3", Title: "War and Peace", Author: "Leo Tolstoy", Quantity: 6},
-}
 
 func getBooks(c *gin.Context) {
 	db, err := connectDB()
@@ -39,16 +33,16 @@ func getBooks(c *gin.Context) {
 	}
 	defer db.Close()
 
-	rows, err := db.Query("SELECT * FROM books")
+	rows, err := db.Query("SELECT id, title, author, quantity FROM books_details")
 	if err != nil {
 		c.IndentedJSON(http.StatusInternalServerError, gin.H{"error": "failed to fetch books"})
 		return
 	}
 	defer rows.Close()
 
-	var books []book
+	var books []book // books is array which contains all books
 	for rows.Next() {
-		var b book
+		var b book // a single book
 		err := rows.Scan(&b.ID, &b.Title, &b.Author, &b.Quantity)
 		if err != nil {
 			c.IndentedJSON(http.StatusInternalServerError, gin.H{"error": "failed to fetch books"})
@@ -136,7 +130,7 @@ func returnBook(c *gin.Context) {
 
 func connectDB() (*sql.DB, error) {
 	uri := "root:1910@tcp(localhost:3306)/library_system_go"
-	db, err := sql.Open("mysq", uri)
+	db, err := sql.Open("mysql", uri)
 	if err != nil {
 		return nil, err
 	}
