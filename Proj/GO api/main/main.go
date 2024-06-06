@@ -132,12 +132,18 @@ func checkoutBook(c *gin.Context) {
         return
     }
 
-	log.Println(res) // this will print no. of rows affected in the db i suppose
+	log.Println(res.RowsAffected()) // this will print no. of rows affected in the db i suppose
 	book.Quantity--
 	c.IndentedJSON(http.StatusOK, book)
 
 }
 func returnBook(c *gin.Context) {
+	db, err := connectDB()
+	if err != nil{
+		c.IndentedJSON(http.StatusInternalServerError, gin.H{"error":"failed to connect to the db"})
+	}
+	defer db.Close()
+
 	id, ok := c.GetQuery("id") // "/books/?id=2"
 	if !ok {
 		c.IndentedJSON(http.StatusBadRequest, gin.H{"error": "missing id query parameter"})
@@ -149,11 +155,12 @@ func returnBook(c *gin.Context) {
 		return
 	}
 
-	if book.Quantity <= 0 {
-		c.IndentedJSON(http.StatusBadRequest, gin.H{"error": "book not available"})
-		return
-	}
-	book.Quantity += 1
+	_, err = db.Exec("UPDATE books_details SET quantity = ? WHERE id=?", book.Quantity+1, book.ID)
+	if err != nil {
+        c.IndentedJSON(http.StatusInternalServerError, gin.H{"error": "failed to update book quantity"})
+        return
+    }
+	book.Quantity++
 	c.IndentedJSON(http.StatusOK, book)
 }
 
