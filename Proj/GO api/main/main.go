@@ -103,6 +103,13 @@ func bookById(c *gin.Context) {
 func checkoutBook(c *gin.Context) {
 	// here we are going to use query paramenter
 	// example ?id=2
+	db, err := connectDB()
+	if err != nil {
+		c.IndentedJSON(http.StatusInternalServerError, gin.H{"error": "failed to connect to db"})
+		return
+	}
+	defer db.Close()
+
 	id, ok := c.GetQuery("id") // "/books/?id=2"
 	if !ok {
 		c.IndentedJSON(http.StatusBadRequest, gin.H{"error": "missing id query parameter"})
@@ -118,7 +125,15 @@ func checkoutBook(c *gin.Context) {
 		c.IndentedJSON(http.StatusBadRequest, gin.H{"error": "book not available"})
 		return
 	}
-	book.Quantity -= 1
+
+	res, err := db.Exec("UPDATE books_details SET quantity = ? WHERE id=?", book.Quantity-1, book.ID)
+	if err != nil {
+        c.IndentedJSON(http.StatusInternalServerError, gin.H{"error": "failed to update book quantity"})
+        return
+    }
+
+	log.Println(res) // this will print no. of rows affected in the db i suppose
+	book.Quantity--
 	c.IndentedJSON(http.StatusOK, book)
 
 }
