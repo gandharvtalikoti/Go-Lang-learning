@@ -1,4 +1,5 @@
 package main
+
 import (
 	"database/sql"
 	"errors"
@@ -9,28 +10,15 @@ import (
 	_ "github.com/go-sql-driver/mysql"
 )
 
-// we'll build a library api
-// - store a bunch of books
-// - check in a book
-// - check out a book
-// - view all books
-// - get books by id
 
 type book struct {
-	ID       string `json:"id"` // json field initializer
+	ID       *int   `json:"id,omitempty"` // json field initializer
 	Title    string `json:"title"`
 	Author   string `json:"author"`
 	Quantity int    `json:"quantity"`
 }
 
-// dummy data
-var books = []book{
-	{ID: "1", Title: "In Search of Lost Time", Author: "Marcel Proust", Quantity: 2},
-	{ID: "2", Title: "The Great Gatsby", Author: "F. Scott Fitzgerald", Quantity: 5},
-	{ID: "3", Title: "War and Peace", Author: "Leo Tolstoy", Quantity: 6},
-}
-
-func getBooks(c *gin.Context) {
+func createBook(c *gin.Context) {
 	db, err := connectDB()
 	if err != nil {
 		c.IndentedJSON(http.StatusInternalServerError, gin.H{"error": "failed to connect to db"})
@@ -38,35 +26,24 @@ func getBooks(c *gin.Context) {
 	}
 	defer db.Close()
 
-	rows, err := db.Query("SELECT id, title, author, quantity FROM books_details")
-	if err != nil {
-		c.IndentedJSON(http.StatusInternalServerError, gin.H{"error": "failed to fetch books"})
-		return
-	}
-	defer rows.Close()
-
-	var books []book // books is array which contains all books
-	for rows.Next() {
-		var b book // a single book
-		err := rows.Scan(&b.ID, &b.Title, &b.Author, &b.Quantity)
-		if err != nil {
-			c.IndentedJSON(http.StatusInternalServerError, gin.H{"error": "failed to fetch books"})
-			return
-		}
-		books = append(books, b)
-	}
-
-	c.IndentedJSON(http.StatusOK, books)
-}
-
-func createBook(c *gin.Context) {
 	var newBook book
 	if err := c.BindJSON(&newBook); err != nil {
 		c.IndentedJSON(http.StatusNotFound, gin.H{"error": "book not found"})
 		return
 	}
 
-	books = append(books, newBook)
+	// books = append(books, newBook)
+	res, err := db.Exec("INSERT into books_details (title, author, quantity) VALUES (?, ?, ?)", newBook.Title, newBook.Author, newBook.Quantity)
+	if err != nil {
+		c.IndentedJSON(http.StatusInternalServerError, gin.H{"error": "failed to create book"})
+		return
+	}
+	res.LastInsertId()
+	if err != nil {
+		c.IndentedJSON(http.StatusInternalServerError, gin.H{"error": "failed to get book ID"})
+		return
+	}
+
 	c.IndentedJSON(http.StatusCreated, newBook)
 }
 
@@ -127,9 +104,9 @@ func checkoutBook(c *gin.Context) {
 
 	res, err := db.Exec("UPDATE books_details SET quantity = ? WHERE id=?", book.Quantity-1, book.ID)
 	if err != nil {
-        c.IndentedJSON(http.StatusInternalServerError, gin.H{"error": "failed to update book quantity"})
-        return
-    }
+		c.IndentedJSON(http.StatusInternalServerError, gin.H{"error": "failed to update book quantity"})
+		return
+	}
 
 	log.Println(res.RowsAffected()) // this will print no. of rows affected in the db i suppose
 	book.Quantity--
@@ -138,8 +115,8 @@ func checkoutBook(c *gin.Context) {
 }
 func returnBook(c *gin.Context) {
 	db, err := connectDB()
-	if err != nil{
-		c.IndentedJSON(http.StatusInternalServerError, gin.H{"error":"failed to connect to the db"})
+	if err != nil {
+		c.IndentedJSON(http.StatusInternalServerError, gin.H{"error": "failed to connect to the db"})
 	}
 	defer db.Close()
 
@@ -156,9 +133,9 @@ func returnBook(c *gin.Context) {
 
 	_, err = db.Exec("UPDATE books_details SET quantity = ? WHERE id=?", book.Quantity+1, book.ID)
 	if err != nil {
-        c.IndentedJSON(http.StatusInternalServerError, gin.H{"error": "failed to update book quantity"})
-        return
-    }
+		c.IndentedJSON(http.StatusInternalServerError, gin.H{"error": "failed to update book quantity"})
+		return
+	}
 	book.Quantity++
 	c.IndentedJSON(http.StatusOK, book)
 }
@@ -171,4 +148,33 @@ func connectDB() (*sql.DB, error) {
 	}
 	return db, nil
 
+}
+
+func getBooks(c *gin.Context) {
+	db, err := connectDB()
+	if err != nil {
+		c.IndentedJSON(http.StatusInternalServerError, gin.H{"error": "failed to connect to db"})
+		return
+	}
+	defer db.Close()
+
+	rows, err := db.Query("SELECT id, title, author, quantity FROM books_details")
+	if err != nil {
+		c.IndentedJSON(http.StatusInternalServerError, gin.H{"error": "failed to fetch books"})
+		return
+	}
+	defer rows.Close()
+
+	var books []book // books is array which contains all books
+	for rows.Next() {
+		var b book // a single book
+		err := rows.Scan(&b.ID, &b.Title, &b.Author, &b.Quantity)
+		if err != nil {
+			c.IndentedJSON(http.StatusInternalServerError, gin.H{"error": "failed to fetch books"})
+			return
+		}
+		books = append(books, b)
+	}
+
+	c.IndentedJSON(http.StatusOK, books)
 }
