@@ -1,10 +1,13 @@
 package main
 
 import (
+	"database/sql"
 	"errors"
-	// "fmt"
-	"github.com/gin-gonic/gin"
+	"log"
 	"net/http"
+
+	"github.com/gin-gonic/gin"
+	_ "github.com/go-sql-driver/mysql"
 )
 
 // we'll build a library api
@@ -28,7 +31,21 @@ var books = []book{
 	{ID: "3", Title: "War and Peace", Author: "Leo Tolstoy", Quantity: 6},
 }
 
-func getBOoks(c *gin.Context) {
+func getBooks(c *gin.Context) {
+	
+
+	var books []book
+
+	for rows.Next() {
+		var b book
+		err := rows.Scan(&b.ID, &b.Title, &b.Author, &b.Quantity)
+		if err != nil {
+			c.IndentedJSON(http.StatusInternalServerError, gin.H{"error": "failed to fetch books"})
+			return
+		}
+		books = append(books, b)
+	}
+
 	c.IndentedJSON(http.StatusOK, books)
 }
 
@@ -86,7 +103,7 @@ func checkoutBook(c *gin.Context) {
 	c.IndentedJSON(http.StatusOK, book)
 
 }
-func returnBook(c*gin.Context){
+func returnBook(c *gin.Context) {
 	id, ok := c.GetQuery("id") // "/books/?id=2"
 	if !ok {
 		c.IndentedJSON(http.StatusBadRequest, gin.H{"error": "missing id query parameter"})
@@ -106,12 +123,28 @@ func returnBook(c*gin.Context){
 	c.IndentedJSON(http.StatusOK, book)
 }
 
+func connectDB() (*sql.DB, error) {
+	uri := "root:1910@tcp(localhost:3306)/library_system_go"
+	db, err := sql.Open("mysq", uri)
+	if err != nil {
+		return nil, err
+	}
+	return db, nil
+
+}
 func main() {
+	
 	router := gin.Default()
-	router.GET("/books", getBOoks)
+	router.GET("/books", getBooks)
 	router.POST("/books", createBook)
 	router.PATCH("/checkout", checkoutBook)
 	router.PATCH("/return", returnBook)
 	router.GET("/books/:id", bookById)
-	router.Run("localhost:8080")
+	// router.Run("localhost:8080")
+
+
+	log.Println("Starting server on http://localhost:8080")
+	if err := router.Run("localhost:8080"); err != nil {
+		log.Fatalf("Error starting server: %v", err)
+	}
 }
