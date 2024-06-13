@@ -65,7 +65,17 @@ func main() {
 	for i:=0; i<3; i++{
 		fmt.Print(i," ")
 	}
+	// POINTERS
+	fmt.Println("\nPOINTERS")
+	var x int = 1
+	var p *int = &x
 
-	fmt.Println(v) // i can access this variable as its within the package "main"
-
+	// x := 1
+	// p := &x
+	// p : holds the memory address of x
+	// *p : holds the value of x
+	fmt.Println("value of p : ", *p)
+	fmt.Println("address of p",p)
+	
+	// t
 }

@@ -31,7 +31,6 @@ func createBook(c *gin.Context) {
 		c.IndentedJSON(http.StatusNotFound, gin.H{"error": "book not found"})
 		return
 	}
-
 	// books = append(books, newBook)
 	res, err := db.Exec("INSERT into books_details (title, author, quantity) VALUES (?, ?, ?)", newBook.Title, newBook.Author, newBook.Quantity)
 	if err != nil {
@@ -43,7 +42,6 @@ func createBook(c *gin.Context) {
 		c.IndentedJSON(http.StatusInternalServerError, gin.H{"error": "failed to get book ID"})
 		return
 	}
-
 	c.IndentedJSON(http.StatusCreated, newBook)
 }
 

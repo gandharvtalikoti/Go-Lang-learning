@@ -1,3 +1,3 @@
 // variables within package
 package main
-var v = 9
+var Yo = 9
