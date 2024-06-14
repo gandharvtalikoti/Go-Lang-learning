@@ -16,6 +16,8 @@ func main() {
 	router.GET("/books/:id", bookById)
 	// router.Run("localhost:8080")
 
+	router.POST("/users", createUser)
+
 	log.Println("Starting server on http://localhost:8080")
 	if err := router.Run("localhost:8080"); err != nil {
 		log.Fatalf("Error starting server: %v", err)

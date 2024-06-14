@@ -10,12 +10,67 @@ import (
 	_ "github.com/go-sql-driver/mysql"
 )
 
+// who took the book
+// every book has a log data
+// authentication 
+// user reports
+// user lists 
+// over due books
+// book history
+
+type user struct {
+    ID    *int   `json:"id,omitempty"`
+    Name  string `json:"name"`
+    Email string `json:"email"`
+}
 
 type book struct {
 	ID       *int   `json:"id,omitempty"` // json field initializer
 	Title    string `json:"title"`
 	Author   string `json:"author"`
 	Quantity int    `json:"quantity"`
+}
+
+
+// creating user
+
+func createUser(c *gin.Context) {
+	db, er := connectDB()
+	if er != nil {
+		c.IndentedJSON(http.StatusInternalServerError, gin.H{"error": "failed to connect to db"})
+		return
+	}
+	defer db.Close()
+
+	var newUser user
+	if err := c.Bind(&newUser); err != nil {
+		c.IndentedJSON(http.StatusBadRequest, gin.H{"error": "invalid request payload"})
+		return
+	}
+
+	// Check if user already exists
+	var count int
+	err := db.QueryRow("SELECT COUNT(*) FROM users WHERE email = ?", newUser.Email).Scan(&count)
+	if err != nil {
+		c.IndentedJSON(http.StatusInternalServerError, gin.H{"error": "failed to check user existence"})
+		return
+	}
+	if count > 0 {
+		c.IndentedJSON(http.StatusBadRequest, gin.H{"error": "user already exists"})
+		return
+	}
+
+	res, err := db.Exec("INSERT INTO users (name, email) VALUES (?, ?)", newUser.Name, newUser.Email)
+	if err != nil {
+		c.IndentedJSON(http.StatusInternalServerError, gin.H{"error": "failed to create user"})
+		return
+	}
+	_, err = res.LastInsertId()
+	if err != nil {
+		c.IndentedJSON(http.StatusInternalServerError, gin.H{"error": "failed to get user ID"})
+		return
+	}
+	c.IndentedJSON(http.StatusCreated, newUser)
 }
 
 func createBook(c *gin.Context) {
