@@ -17,6 +17,7 @@ func main() {
 	// router.Run("localhost:8080")
 
 	router.POST("/users", createUser)
+	router.DELETE("/users/:id", deleteUser)
 
 	log.Println("Starting server on http://localhost:8080")
 	if err := router.Run("localhost:8080"); err != nil {

@@ -71,8 +71,50 @@ func createUser(c *gin.Context) {
 		return
 	}
 	c.IndentedJSON(http.StatusCreated, newUser)
+
 }
 
+// deleting user
+func deleteUser(c *gin.Context) {
+	db, err := connectDB()
+	if err != nil {
+		c.IndentedJSON(http.StatusInternalServerError, gin.H{"error": "failed to connect to db"})
+		return
+	}
+	defer db.Close()
+
+	id := c.Param("id")
+
+	// Check if user exists
+	var count int
+	err = db.QueryRow("SELECT COUNT(*) FROM users WHERE id = ?", id).Scan(&count)
+	if err != nil {
+		c.IndentedJSON(http.StatusInternalServerError, gin.H{"error": "failed to check user existence"})
+		return
+	}
+	if count == 0 {
+		c.IndentedJSON(http.StatusNotFound, gin.H{"error": "user not found"})
+		return
+	}
+
+	// Get user details before deletion
+	var deletedUser user
+	err = db.QueryRow("SELECT id, name, email FROM users WHERE id = ?", id).Scan(&deletedUser.ID, &deletedUser.Name, &deletedUser.Email)
+	if err != nil {
+		c.IndentedJSON(http.StatusInternalServerError, gin.H{"error": "failed to fetch user details"})
+		return
+	}
+
+	_, err = db.Exec("DELETE FROM users WHERE id = ?", id)
+	if err != nil {
+		c.IndentedJSON(http.StatusInternalServerError, gin.H{"error": "failed to delete user"})
+		return
+	}
+	c.IndentedJSON(http.StatusOK, gin.H{"message": "user deleted successfully", "user": deletedUser})
+}
+
+
+// creating a book
 func createBook(c *gin.Context) {
 	db, err := connectDB()
 	if err != nil {
